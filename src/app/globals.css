@@ -1,0 +1,31 @@
+:root {
+  --nav-h: 0px;
+  --deep: #1b2d26;
+  --pine: #2d4a3e;
+  --gold: #b8973c;
+  --taupe: #6f685d;
+  --charcoal: #2c2a27;
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  color: var(--deep);
+  background: #f7f4ef;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
