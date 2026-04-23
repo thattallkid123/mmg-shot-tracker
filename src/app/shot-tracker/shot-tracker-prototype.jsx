@@ -358,6 +358,7 @@ export default function ShotTrackerPrototype() {
   const [notes, setNotes] = useState('')
   const [trackingStart, setTrackingStart] = useState(null)
   const [latestPosition, setLatestPosition] = useState(null)
+  const [pendingClubShotId, setPendingClubShotId] = useState(null)
   const [shots, setShots] = useState([])
   const [savedRounds, setSavedRounds] = useState([])
   const [roundDate, setRoundDate] = useState(new Date().toISOString().slice(0, 10))
@@ -480,10 +481,11 @@ export default function ShotTrackerPrototype() {
         }
 
         setShots((current) => [shot, ...current])
+        setPendingClubShotId(shot.id)
         setTrackingStart(null)
         setClub('')
         setNotes('')
-        setStatus(`Shot saved: ${formatDistance(distanceMeters, unit)}.`)
+        setStatus(`Shot measured: ${formatDistance(distanceMeters, unit)}. Add club when ready.`)
       } else {
         setStatus('Current position refreshed.')
       }
@@ -514,6 +516,22 @@ export default function ShotTrackerPrototype() {
     setShots((current) =>
       current.map((shot) => (shot.id === shotId ? { ...shot, [field]: value } : shot)),
     )
+  }
+
+  function assignPendingClub(nextClub) {
+    if (!pendingClubShotId) return
+    updateShot(pendingClubShotId, 'club', nextClub)
+    setPendingClubShotId(null)
+    setStatus(`Club assigned: ${nextClub}.`)
+  }
+
+  function toggleShotTracking() {
+    if (trackingStart) {
+      captureCurrentLocation('end')
+      return
+    }
+
+    captureCurrentLocation('start')
   }
 
   function deleteShot(shotId) {
@@ -728,11 +746,8 @@ export default function ShotTrackerPrototype() {
       </div>
 
       <div className={styles.mobileCaddieBar}>
-        <button className={styles.primaryButton} onClick={() => captureCurrentLocation('start')} disabled={isLocating}>
-          Start
-        </button>
-        <button className={styles.secondaryButton} onClick={() => captureCurrentLocation('end')} disabled={isLocating || !trackingStart}>
-          End
+        <button className={trackingStart ? styles.secondaryButton : styles.primaryButton} onClick={toggleShotTracking} disabled={isLocating}>
+          {trackingStart ? 'Stop tracking' : 'Start tracking'}
         </button>
         <button className={styles.ghostButton} onClick={goToNextHole}>
           Next hole
@@ -889,16 +904,26 @@ export default function ShotTrackerPrototype() {
             </div>
 
             <div className={styles.buttonRow}>
-              <button className={styles.primaryButton} onClick={() => captureCurrentLocation('start')} disabled={isLocating}>
-                {isLocating && !trackingStart ? 'Locating...' : 'Start tracking'}
-              </button>
-              <button className={styles.secondaryButton} onClick={() => captureCurrentLocation('end')} disabled={isLocating || !trackingStart}>
-                {isLocating && trackingStart ? 'Locating...' : 'End tracking'}
+              <button className={trackingStart ? styles.secondaryButton : styles.primaryButton} onClick={toggleShotTracking} disabled={isLocating}>
+                {isLocating ? 'Locating...' : trackingStart ? 'Stop tracking' : 'Start tracking'}
               </button>
               <button className={styles.ghostButton} onClick={() => captureCurrentLocation('refresh')} disabled={isLocating}>
                 Refresh GPS
               </button>
             </div>
+
+            {pendingClubShotId ? (
+              <div className={styles.assignClubBox}>
+                <span className={styles.metaLabel}>Assign club to last shot</span>
+                <div className={styles.clubButtonGrid}>
+                  {['Driver', '3W', 'Hybrid', '5i', '7i', '9i', 'PW', 'SW'].map((clubName) => (
+                    <button key={clubName} type="button" onClick={() => assignPendingClub(clubName)}>
+                      {clubName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className={styles.quickActionGrid}>
               <article className={styles.quickActionCard}>

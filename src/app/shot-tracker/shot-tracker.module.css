@@ -110,7 +110,7 @@
   max-width: 1200px;
   margin: -8px auto 18px;
   display: none;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 2fr 1fr;
   gap: 8px;
   padding: 10px;
   border-radius: 999px;
@@ -130,7 +130,8 @@
 
 .quickScoreBar button,
 .quickScoreGrid button,
-.quickToggleGrid button {
+.quickToggleGrid button,
+.clubButtonGrid button {
   min-height: 44px;
   border: 1px solid rgba(44, 42, 39, 0.1);
   border-radius: 999px;
@@ -140,6 +141,21 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.assignClubBox {
+  margin: 14px 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(184, 151, 60, 0.1);
+  border: 1px solid rgba(184, 151, 60, 0.2);
+}
+
+.clubButtonGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .currentHoleEntry {
@@ -992,7 +1008,8 @@ details[open] .sectionSummary::after {
   .greenMapStrip,
   .mapFeatureGrid,
   .quickScoreGrid,
-  .quickToggleGrid {
+  .quickToggleGrid,
+  .clubButtonGrid {
     grid-template-columns: 1fr;
   }
 
