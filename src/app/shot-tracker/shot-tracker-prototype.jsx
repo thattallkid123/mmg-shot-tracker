@@ -724,6 +724,17 @@ export default function ShotTrackerPrototype() {
         </div>
       </div>
 
+      <div className={styles.focusBar}>
+        <div>
+          <span className={styles.metaLabel}>Next action</span>
+          <strong>{trackingStart ? 'Walk to the ball, then end tracking.' : 'Pick club, start tracking, then hit.'}</strong>
+        </div>
+        <div>
+          <span className={styles.metaLabel}>Current hole</span>
+          <strong>{selectedCourse.name} · Hole {holeNumber} · Par {selectedHole.par}</strong>
+        </div>
+      </div>
+
       <div className={styles.roundHud}>
         <div className={styles.hudMain}>
           <div>
@@ -771,9 +782,14 @@ export default function ShotTrackerPrototype() {
 
       <div className={styles.layout}>
         <div className={styles.column}>
-          <div className={styles.panel}>
+          <details className={styles.panel} open>
+            <summary className={styles.sectionSummary}>
+              <span>1</span>
+              <strong>Course setup</strong>
+              <small>{selectedCourse.name} · {selectedTee.label}</small>
+            </summary>
             <div className={styles.panelHeader}>
-              <h2>Mallorca course pack</h2>
+              <h2>Course setup</h2>
               <p>Select the course, tee, and current hole.</p>
             </div>
 
@@ -864,11 +880,16 @@ export default function ShotTrackerPrototype() {
             <p className={styles.priorityNote}>
               Priority Mallorca pack: {priorityCourses.map((course) => course.name).join(', ')}. Santa Ponsa 1, 2, and 3 now use official scorecard par, SI, and tee lengths; other courses are still concept data until we verify them.
             </p>
-          </div>
+          </details>
 
-          <div className={styles.panel}>
+          <details className={styles.panel} open>
+            <summary className={styles.sectionSummary}>
+              <span>2</span>
+              <strong>Track shot</strong>
+              <small>{latestShot ? `Latest ${formatDistance(latestShot.distanceMeters, unit)}` : status}</small>
+            </summary>
             <div className={styles.panelHeader}>
-              <h2>Shot capture</h2>
+              <h2>Track shot</h2>
               <p>{status}</p>
             </div>
 
@@ -954,9 +975,14 @@ export default function ShotTrackerPrototype() {
                 <strong className={styles.summaryValue}>{formatDistance(trackedHoleDistance, unit)}</strong>
               </div>
             </div>
-          </div>
+          </details>
 
-          <div className={styles.panel}>
+          <details className={styles.panel}>
+            <summary className={styles.sectionSummary}>
+              <span>3</span>
+              <strong>Scorecard</strong>
+              <small>{snapshot.holesPlayed} holes entered · {snapshot.grossScore || '--'} total</small>
+            </summary>
             <div className={styles.panelHeader}>
               <h2>Round scoring</h2>
               <p>Resume, edit, and save the current round.</p>
@@ -1006,11 +1032,16 @@ export default function ShotTrackerPrototype() {
                 </div>
               </div>
             </div>
-          </div>
+          </details>
         </div>
 
         <div className={styles.column}>
-          <div className={styles.panel}>
+          <details className={styles.panel} open>
+            <summary className={styles.sectionSummary}>
+              <span>Map</span>
+              <strong>Hole overview</strong>
+              <small>{formatDistance(remainingMeters, unit)} remaining</small>
+            </summary>
             <div className={styles.panelHeader}>
               <h2>Hole overview</h2>
               <p>Hole-specific tee data, target zones, hazard notes, and leave guidance.</p>
@@ -1024,9 +1055,14 @@ export default function ShotTrackerPrototype() {
               remainingMeters={remainingMeters}
               trackedHoleDistance={trackedHoleDistance}
             />
-          </div>
+          </details>
 
-          <div className={styles.panel}>
+          <details className={styles.panel}>
+            <summary className={styles.sectionSummary}>
+              <span>Shots</span>
+              <strong>Current hole shots</strong>
+              <small>{currentHoleShots.length} tracked</small>
+            </summary>
             <div className={styles.panelHeader}>
               <h2>Current hole shots</h2>
               <p>Edit club and notes inline so the round stays useful after the walk back to the buggy.</p>
@@ -1078,9 +1114,14 @@ export default function ShotTrackerPrototype() {
                 ))}
               </div>
             )}
-          </div>
+          </details>
 
-          <div className={styles.panel}>
+          <details className={styles.panel}>
+            <summary className={styles.sectionSummary}>
+              <span>SG</span>
+              <strong>Performance</strong>
+              <small>{formatSignedNumber(snapshot.strokesGained.total)} total</small>
+            </summary>
             <div className={styles.panelHeader}>
               <h2>Performance snapshot</h2>
               <p>A stronger strokes-gained-style model based on score quality, hole length, and round stats.</p>
@@ -1125,9 +1166,14 @@ export default function ShotTrackerPrototype() {
                 <strong className={styles.summaryValue}>{snapshot.fairwaysHit} / {snapshot.girHit}</strong>
               </div>
             </div>
-          </div>
+          </details>
 
-          <div className={styles.panel}>
+          <details className={styles.panel}>
+            <summary className={styles.sectionSummary}>
+              <span>Clubs</span>
+              <strong>Club distances</strong>
+              <small>{clubAverages.length} clubs</small>
+            </summary>
             <div className={styles.panelHeader}>
               <h2>Club distances</h2>
               <p>Simple averages from tracked shots in the current round.</p>
@@ -1148,9 +1194,14 @@ export default function ShotTrackerPrototype() {
                 ))}
               </div>
             )}
-          </div>
+          </details>
 
-          <div className={styles.panel}>
+          <details className={styles.panel}>
+            <summary className={styles.sectionSummary}>
+              <span>HI</span>
+              <strong>Handicap history</strong>
+              <small>{savedRounds.length} saved rounds</small>
+            </summary>
             <div className={styles.panelHeader}>
               <h2>Handicap history</h2>
               <p>Uses the same differential logic as your spreadsheet and keeps saved rounds editable later.</p>
@@ -1176,7 +1227,7 @@ export default function ShotTrackerPrototype() {
                 ))}
               </div>
             )}
-          </div>
+          </details>
         </div>
       </div>
     </section>
