@@ -604,6 +604,7 @@ export default function ShotTrackerPrototype() {
   const trackedHoleDistance = getHoleShotDistance(currentRoundShots, holeNumber)
   const selectedHoleLength = getHoleLength(selectedHole, teeName)
   const remainingMeters = Math.max(0, selectedHoleLength - trackedHoleDistance)
+  const gpsAccuracy = latestPosition?.accuracy || latestShot?.end?.accuracy || null
   const handicapIndex = computeHandicapIndex(savedRounds)
   const snapshot = calculatePerformanceSnapshot({
     scorecard,
@@ -666,6 +667,10 @@ export default function ShotTrackerPrototype() {
           <span className={styles.metaLabel}>Current hole</span>
           <strong>{selectedCourse.name} · Hole {holeNumber} · Par {selectedHole.par}</strong>
         </div>
+        <div>
+          <span className={styles.metaLabel}>GPS</span>
+          <strong>{Number.isFinite(gpsAccuracy) ? `±${Math.round(gpsAccuracy)}m` : 'Tap Refresh GPS'}</strong>
+        </div>
       </div>
 
       <div className={styles.roundHud}>
@@ -711,6 +716,18 @@ export default function ShotTrackerPrototype() {
           <button className={styles.dangerButton} onClick={endRoundAndDelete}>End + delete round</button>
           <button className={styles.ghostButtonDark} onClick={exportTrackerData}>Export backup</button>
         </div>
+      </div>
+
+      <div className={styles.mobileCaddieBar}>
+        <button className={styles.primaryButton} onClick={() => captureCurrentLocation('start')} disabled={isLocating}>
+          Start
+        </button>
+        <button className={styles.secondaryButton} onClick={() => captureCurrentLocation('end')} disabled={isLocating || !trackingStart}>
+          End
+        </button>
+        <button className={styles.ghostButton} onClick={goToNextHole}>
+          Next hole
+        </button>
       </div>
 
       <div className={styles.layout}>
@@ -879,6 +896,10 @@ export default function ShotTrackerPrototype() {
               <article className={styles.quickActionCard}>
                 <span className={styles.metaLabel}>Green depth</span>
                 <strong>{formatDistance(selectedHole.greenDepthMeters, unit)}</strong>
+              </article>
+              <article className={styles.quickActionCard}>
+                <span className={styles.metaLabel}>GPS accuracy</span>
+                <strong>{Number.isFinite(gpsAccuracy) ? `±${Math.round(gpsAccuracy)}m` : '--'}</strong>
               </article>
             </div>
 

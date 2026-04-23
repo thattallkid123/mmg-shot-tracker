@@ -36,7 +36,7 @@
 }
 
 .focusBar {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) auto;
   margin-bottom: 16px;
   padding: 16px 18px;
   border-radius: 22px;
@@ -101,6 +101,29 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.mobileCaddieBar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  max-width: 1200px;
+  margin: -8px auto 18px;
+  display: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border-radius: 999px;
+  background: rgba(247, 244, 239, 0.92);
+  border: 1px solid rgba(44, 42, 39, 0.08);
+  box-shadow: 0 14px 34px rgba(44, 42, 39, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.mobileCaddieBar button {
+  min-height: 42px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .hudChip {
@@ -857,6 +880,10 @@ details[open] .sectionSummary::after {
 
   .hudRail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobileCaddieBar {
+    display: grid;
   }
 
   .hudNumbers {
