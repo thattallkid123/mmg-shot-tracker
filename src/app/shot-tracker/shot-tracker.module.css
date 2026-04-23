@@ -120,6 +120,53 @@
   backdrop-filter: blur(12px);
 }
 
+.quickScoreBar {
+  max-width: 1200px;
+  margin: -8px auto 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quickScoreBar button,
+.quickScoreGrid button,
+.quickToggleGrid button {
+  min-height: 44px;
+  border: 1px solid rgba(44, 42, 39, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--deep);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.currentHoleEntry {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(247, 244, 239, 0.72);
+  border: 1px solid rgba(44, 42, 39, 0.08);
+}
+
+.quickScoreGrid,
+.quickToggleGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quickToggleGrid {
+  margin-top: 8px;
+}
+
+.toggleActive {
+  border-color: var(--pine) !important;
+  background: var(--pine) !important;
+  color: #fff !important;
+}
+
 .mobileCaddieBar button {
   min-height: 42px;
   padding-left: 10px;
@@ -886,6 +933,18 @@ details[open] .sectionSummary::after {
     display: grid;
   }
 
+  .quickScoreBar {
+    position: sticky;
+    top: 62px;
+    z-index: 19;
+    padding: 8px;
+    border-radius: 20px;
+    background: rgba(247, 244, 239, 0.92);
+    border: 1px solid rgba(44, 42, 39, 0.08);
+    box-shadow: 0 14px 34px rgba(44, 42, 39, 0.08);
+    backdrop-filter: blur(12px);
+  }
+
   .hudNumbers {
     justify-content: space-between;
   }
@@ -931,7 +990,9 @@ details[open] .sectionSummary::after {
   .playbookRow,
   .shotEditGrid,
   .greenMapStrip,
-  .mapFeatureGrid {
+  .mapFeatureGrid,
+  .quickScoreGrid,
+  .quickToggleGrid {
     grid-template-columns: 1fr;
   }
 

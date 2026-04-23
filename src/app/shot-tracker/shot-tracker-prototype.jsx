@@ -501,6 +501,15 @@ export default function ShotTrackerPrototype() {
     )
   }
 
+  function updateCurrentHole(field, value) {
+    updateHole(holeNumber - 1, field, value)
+  }
+
+  function setCurrentHoleScore(scoreToPar) {
+    const score = Math.max(1, selectedHole.par + scoreToPar)
+    updateCurrentHole('score', `${score}`)
+  }
+
   function updateShot(shotId, field, value) {
     setShots((current) =>
       current.map((shot) => (shot.id === shotId ? { ...shot, [field]: value } : shot)),
@@ -730,6 +739,13 @@ export default function ShotTrackerPrototype() {
         </button>
       </div>
 
+      <div className={styles.quickScoreBar}>
+        <button type="button" onClick={() => setCurrentHoleScore(-1)}>Birdie</button>
+        <button type="button" onClick={() => setCurrentHoleScore(0)}>Par</button>
+        <button type="button" onClick={() => setCurrentHoleScore(1)}>Bogey</button>
+        <button type="button" onClick={() => setCurrentHoleScore(2)}>Double</button>
+      </div>
+
       <div className={styles.layout}>
         <div className={styles.column}>
           <details className={styles.panel} open>
@@ -923,6 +939,42 @@ export default function ShotTrackerPrototype() {
               <div className={styles.summaryCard}>
                 <span className={styles.metaLabel}>Tracked on hole</span>
                 <strong className={styles.summaryValue}>{formatDistance(trackedHoleDistance, unit)}</strong>
+              </div>
+            </div>
+
+            <div className={styles.currentHoleEntry}>
+              <div className={styles.panelHeader}>
+                <h2>Current hole quick entry</h2>
+                <p>Fast buttons for the hole you are playing now.</p>
+              </div>
+              <div className={styles.quickScoreGrid}>
+                {[-1, 0, 1, 2].map((scoreToPar) => (
+                  <button key={scoreToPar} type="button" onClick={() => setCurrentHoleScore(scoreToPar)}>
+                    {scoreToPar === -1 ? 'Birdie' : scoreToPar === 0 ? 'Par' : scoreToPar === 1 ? 'Bogey' : 'Double'}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.quickToggleGrid}>
+                <button
+                  type="button"
+                  className={scorecard[holeNumber - 1]?.fairwayHit ? styles.toggleActive : ''}
+                  onClick={() => updateCurrentHole('fairwayHit', !scorecard[holeNumber - 1]?.fairwayHit)}
+                >
+                  Fairway
+                </button>
+                <button
+                  type="button"
+                  className={scorecard[holeNumber - 1]?.gir ? styles.toggleActive : ''}
+                  onClick={() => updateCurrentHole('gir', !scorecard[holeNumber - 1]?.gir)}
+                >
+                  GIR
+                </button>
+                <button type="button" onClick={() => updateCurrentHole('putts', `${Number(scorecard[holeNumber - 1]?.putts || 0) + 1}`)}>
+                  + Putt
+                </button>
+                <button type="button" onClick={() => updateCurrentHole('penalties', `${Number(scorecard[holeNumber - 1]?.penalties || 0) + 1}`)}>
+                  + Penalty
+                </button>
               </div>
             </div>
           </details>
