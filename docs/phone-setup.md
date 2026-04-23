@@ -37,3 +37,9 @@ http://localhost:3000
 8. Tap `Next hole`.
 9. After the round, tap `Save round`.
 10. Tap `Export backup` to keep a local copy.
+
+## Scorecard trust
+
+- Santa Ponsa 1, Santa Ponsa 2, and Santa Ponsa 3 use official scorecard par, stroke index, and tee lengths.
+- The other Mallorca courses are still concept scorecards until we verify them one by one.
+- The hole map artwork is custom concept artwork for visual planning, not a licensed satellite map.

@@ -92,13 +92,17 @@ function buildEmptyScorecard(course, teeName) {
   return course.holes.map((hole) => ({
     holeNumber: hole.holeNumber,
     par: hole.par,
-    teeLengthMeters: hole.tees[teeName]?.lengthMeters || hole.tees.white.lengthMeters,
+    teeLengthMeters: getHoleLength(hole, teeName),
     score: '',
     putts: '',
     penalties: '',
     fairwayHit: false,
     gir: false,
   }))
+}
+
+function getHoleLength(hole, teeName) {
+  return hole.tees[teeName]?.lengthMeters || Object.values(hole.tees)[0]?.lengthMeters || 0
 }
 
 function createLandingCorridor(geometry) {
@@ -130,7 +134,7 @@ function calculatePerformanceSnapshot({ scorecard, course, teeName, shots }) {
   const playedHoleModels = course.holes.slice(0, holesPlayed || course.holes.length)
   const parPlayed = playedHoleModels.reduce((sum, hole) => sum + hole.par, 0)
   const expectedFromTeeTotal = playedHoleModels.reduce(
-    (sum, hole) => sum + expectedStrokesFromTee(hole.tees[teeName]?.lengthMeters || hole.tees.white.lengthMeters, hole.par),
+    (sum, hole) => sum + expectedStrokesFromTee(getHoleLength(hole, teeName), hole.par),
     0,
   )
 
@@ -224,7 +228,7 @@ function HoleOverview({
   remainingMeters,
   trackedHoleDistance,
 }) {
-  const selectedHoleLength = hole.tees[teeName]?.lengthMeters || hole.tees.white.lengthMeters
+  const selectedHoleLength = getHoleLength(hole, teeName)
   const greenDistances = getGreenDistances(remainingMeters, hole.greenDepthMeters)
   const targetDistances = getTargetDistances(hole, selectedHoleLength, trackedHoleDistance)
   const distanceLabel = latestShot?.distanceMeters
@@ -435,6 +439,12 @@ export default function ShotTrackerPrototype() {
   )
   const [scorecard, setScorecard] = useState(() => buildEmptyScorecard(selectedCourse, teeName))
 
+  useEffect(() => {
+    if (!selectedCourse.tees.some((tee) => tee.name === teeName)) {
+      setTeeName(selectedCourse.tees[0].name)
+    }
+  }, [selectedCourse, teeName])
+
   function resetRoundState(nextCourse = selectedCourse, nextTeeName = teeName) {
     setScorecard(buildEmptyScorecard(nextCourse, nextTeeName))
     setShots([])
@@ -643,7 +653,7 @@ export default function ShotTrackerPrototype() {
   const currentHoleShots = currentRoundShots.filter((shot) => shot.holeNumber === holeNumber)
   const latestShot = currentHoleShots[0] || null
   const trackedHoleDistance = getHoleShotDistance(currentRoundShots, holeNumber)
-  const selectedHoleLength = selectedHole.tees[teeName]?.lengthMeters || selectedHole.tees.white.lengthMeters
+  const selectedHoleLength = getHoleLength(selectedHole, teeName)
   const remainingMeters = Math.max(0, selectedHoleLength - trackedHoleDistance)
   const handicapIndex = computeHandicapIndex(savedRounds)
   const snapshot = calculatePerformanceSnapshot({
@@ -841,7 +851,10 @@ export default function ShotTrackerPrototype() {
 
             <p className={styles.courseSummary}>{selectedCourse.summary}</p>
             <p className={styles.priorityNote}>
-              Priority Mallorca pack: {priorityCourses.map((course) => course.name).join(', ')}.
+              Scorecard status: {selectedCourse.scorecardSource}.
+            </p>
+            <p className={styles.priorityNote}>
+              Priority Mallorca pack: {priorityCourses.map((course) => course.name).join(', ')}. Santa Ponsa 1, 2, and 3 now use official scorecard par, SI, and tee lengths; other courses are still concept data until we verify them.
             </p>
           </div>
 

@@ -125,12 +125,104 @@ const PRIORITY_HAZARDS = {
   'Golf Santa Ponsa 2': ['Tree chute', 'Position bunker', 'Narrow neck', 'Shaped green'],
 }
 
+const OFFICIAL_SCORECARDS = {
+  'Golf Santa Ponsa 1': {
+    source: 'Official Golf Santa Ponsa scorecard',
+    tees: [
+      { name: 'white', label: 'White', totalLengthMeters: 6543, courseRating: 75.1, slope: 133 },
+      { name: 'yellow', label: 'Yellow', totalLengthMeters: 6219, courseRating: 73.3, slope: 131 },
+      { name: 'blue', label: 'Blue', totalLengthMeters: 5617, courseRating: 76.3, slope: 138 },
+      { name: 'red', label: 'Red', totalLengthMeters: 5250, courseRating: 74.4, slope: 132 },
+    ],
+    pars: [4, 5, 3, 4, 4, 5, 3, 4, 4, 5, 4, 3, 5, 4, 3, 4, 4, 4],
+    strokeIndexes: [4, 2, 18, 6, 14, 12, 16, 10, 8, 1, 15, 7, 11, 9, 17, 3, 13, 5],
+    lengths: {
+      white: [433, 520, 160, 420, 310, 450, 170, 360, 400, 590, 360, 220, 460, 380, 170, 400, 320, 420],
+      yellow: [410, 500, 150, 400, 300, 440, 160, 350, 380, 560, 343, 200, 440, 350, 150, 394, 300, 392],
+      blue: [314, 439, 130, 370, 270, 400, 140, 310, 350, 530, 310, 170, 410, 330, 140, 364, 280, 360],
+      red: [314, 400, 130, 300, 270, 390, 140, 310, 350, 470, 219, 170, 390, 330, 140, 337, 280, 310],
+    },
+  },
+  'Golf Santa Ponsa 2': {
+    source: 'Official Golf Santa Ponsa scorecard',
+    tees: [
+      { name: 'white', label: 'White', totalLengthMeters: 6053, courseRating: 72.8, slope: 134 },
+      { name: 'yellow', label: 'Yellow', totalLengthMeters: 5706, courseRating: 71.1, slope: 131 },
+      { name: 'blue', label: 'Blue', totalLengthMeters: 5128, courseRating: 73.2, slope: 134 },
+      { name: 'red', label: 'Red', totalLengthMeters: 4872, courseRating: 71.6, slope: 131 },
+    ],
+    pars: [4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 4, 3, 4, 4, 5, 4, 5, 3],
+    strokeIndexes: [2, 16, 8, 18, 4, 6, 12, 10, 14, 9, 1, 17, 15, 5, 11, 13, 3, 7],
+    lengths: {
+      white: [350, 157, 450, 292, 418, 352, 160, 484, 348, 289, 384, 155, 367, 363, 504, 340, 474, 166],
+      yellow: [332, 140, 437, 279, 398, 339, 149, 465, 331, 275, 367, 124, 349, 347, 472, 326, 436, 140],
+      blue: [300, 114, 391, 266, 365, 319, 138, 416, 256, 262, 311, 102, 325, 332, 410, 303, 403, 115],
+      red: [293, 100, 383, 251, 345, 312, 128, 401, 244, 250, 305, 87, 298, 321, 397, 291, 388, 78],
+    },
+  },
+  'Golf Santa Ponsa 3': {
+    source: 'Official Golf Santa Ponsa scorecard',
+    tees: [
+      { name: 'yellow', label: 'Yellow', totalLengthMeters: 1599, courseRating: 30, slope: 29 },
+      { name: 'red', label: 'Red', totalLengthMeters: 1332, courseRating: 30, slope: 72 },
+    ],
+    pars: [4, 4, 3, 3, 3, 4, 3, 3, 3],
+    strokeIndexes: [1, 5, 9, 8, 7, 2, 4, 6, 3],
+    lengths: {
+      yellow: [254, 271, 98, 115, 120, 304, 163, 119, 155],
+      red: [231, 232, 84, 100, 84, 254, 125, 104, 118],
+    },
+  },
+}
+
 function makeTeeSet(baseLength, slopeBase) {
   return [
     { name: 'white', label: 'White', totalLengthMeters: baseLength, courseRating: 72.4, slope: slopeBase, delta: 0 },
     { name: 'yellow', label: 'Yellow', totalLengthMeters: Math.round(baseLength * 0.95), courseRating: 70.9, slope: Math.max(113, slopeBase - 5), delta: -12 },
     { name: 'blue', label: 'Blue', totalLengthMeters: Math.round(baseLength * 0.89), courseRating: 69.2, slope: Math.max(108, slopeBase - 9), delta: -24 },
   ]
+}
+
+function getTeeLengths(scorecard, index) {
+  return Object.fromEntries(
+    scorecard.tees.map((tee) => [
+      tee.name,
+      { lengthMeters: scorecard.lengths[tee.name][index] },
+    ]),
+  )
+}
+
+function buildOfficialHolePack(courseName, scorecard) {
+  const guidanceSet = PRIORITY_GUIDANCE[courseName] || [
+    'Trust the official scorecard first; use the concept map only for visual planning.',
+  ]
+  const hazardSet = PRIORITY_HAZARDS[courseName] || ['Official scorecard loaded']
+  const variants = PRIORITY_VARIANTS[courseName] || []
+
+  return scorecard.pars.map((par, index) => {
+    const holeNumber = index + 1
+    const referenceTee = scorecard.lengths.white || scorecard.lengths.yellow || scorecard.lengths.red
+    const referenceLength = referenceTee[index]
+    const targetCarryMeters = par === 5 ? Math.round(referenceLength * 0.46) : par === 3 ? Math.round(referenceLength * 0.84) : Math.round(referenceLength * 0.53)
+    const idealLeaveMeters = par === 3 ? 0 : par === 5 ? 95 : 115
+
+    return {
+      holeNumber,
+      par,
+      strokeIndex: scorecard.strokeIndexes[index],
+      overviewStatus: 'official-scorecard',
+      overviewVariant: variants[index] || ['straight', 'soft-left', 'soft-right', 'dogleg-left', 'dogleg-right'][index % 5],
+      targetCarryMeters,
+      idealLeaveMeters,
+      greenDepthMeters: 24 + (holeNumber % 5) * 2,
+      fairwayWidthMeters: par === 5 ? 34 - (holeNumber % 3) : 30 - (holeNumber % 4),
+      targetZone: par === 5 ? 'Lay-up shelf' : par === 3 ? 'Green target' : 'Preferred landing',
+      hazardNote: hazardSet[index % hazardSet.length],
+      guidance: guidanceSet[index % guidanceSet.length],
+      tees: getTeeLengths(scorecard, index),
+      summary: `${courseName} hole ${holeNumber} uses official par, SI, and tee lengths. Map art remains concept-only.`,
+    }
+  })
 }
 
 function buildHoleLengths(pars, config) {
@@ -190,9 +282,10 @@ function buildHolePack(courseName, pars, lengths) {
 
 function buildCourse(baseName, config) {
   const course = findCourseByName(baseName)
-  const pars = config.pars
-  const tees = makeTeeSet(config.baseLength, config.slopeBase)
-  const lengths = buildHoleLengths(pars, config)
+  const officialScorecard = OFFICIAL_SCORECARDS[baseName]
+  const pars = officialScorecard?.pars || config.pars
+  const tees = officialScorecard?.tees || makeTeeSet(config.baseLength, config.slopeBase)
+  const lengths = officialScorecard ? [] : buildHoleLengths(pars, config)
 
   return {
     id: baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
@@ -201,9 +294,10 @@ function buildCourse(baseName, config) {
     summary: course?.text || 'Mallorca course pack entry for the tracker.',
     footer: course?.footer || 'Course pack enabled',
     priority: PRIORITY_COURSE_NAMES.has(baseName),
+    scorecardSource: officialScorecard?.source || 'Concept scorecard - verify before relying on this course',
     theme: COURSE_THEMES[baseName] || { accent: '#365f4a', fairway: '#7faf88', sky: '#ddede6' },
     tees,
-    holes: buildHolePack(baseName, pars, lengths),
+    holes: officialScorecard ? buildOfficialHolePack(baseName, officialScorecard) : buildHolePack(baseName, pars, lengths),
   }
 }
 
