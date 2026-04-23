@@ -7,7 +7,7 @@
     linear-gradient(180deg, #f7f4ef 0%, #efeae0 100%);
 }
 
-.hero,
+.appHeader,
 .layout,
 .roundHud,
 .focusBar {
@@ -17,9 +17,11 @@
   gap: 20px;
 }
 
-.hero {
-  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 340px);
-  margin-bottom: 20px;
+.appHeader {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
 }
 
 .roundHud {
@@ -95,6 +97,12 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.endRoundBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .hudChip {
   padding: 16px 18px;
   border-radius: 18px;
@@ -121,23 +129,42 @@
 
 .eyebrow {
   color: var(--gold);
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.25rem;
 }
 
 .heroLogo {
   display: block;
-  width: min(280px, 70vw);
+  width: 72px;
   height: auto;
-  margin-bottom: 18px;
   filter: drop-shadow(0 16px 26px rgba(44, 42, 39, 0.08));
 }
 
-.hudLogo {
+.cornerBrand {
+  width: 78px;
+}
+
+.appTitle {
+  margin: 0;
+  color: var(--deep);
+  font-family: var(--font-serif);
+  font-size: clamp(1.65rem, 4vw, 2.55rem);
+  font-weight: 500;
+}
+
+.headerStat {
+  min-width: 150px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(44, 42, 39, 0.08);
+}
+
+.headerStat strong {
   display: block;
-  width: min(220px, 58vw);
-  height: auto;
-  margin-bottom: 16px;
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.18));
+  margin-top: 0.25rem;
+  color: var(--deep);
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
 }
 
 .title {
@@ -377,6 +404,8 @@ details[open] .sectionSummary::after {
 .primaryButton,
 .secondaryButton,
 .ghostButton,
+.ghostButtonDark,
+.dangerButton,
 .holeNavButton,
 .coursePill,
 .quickNoteChip,
@@ -410,6 +439,24 @@ details[open] .sectionSummary::after {
   color: var(--deep);
 }
 
+.ghostButtonDark {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.dangerButton {
+  border: 1px solid rgba(143, 73, 54, 0.25);
+  background: rgba(143, 73, 54, 0.1);
+  color: #8f4936;
+}
+
+.roundHud .dangerButton {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
 .quickNoteChip {
   min-height: 0;
   padding: 9px 14px;
@@ -434,8 +481,7 @@ details[open] .sectionSummary::after {
   padding: 12px 14px;
 }
 
-.quickNoteRow,
-.coursePills {
+.quickNoteRow {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -536,84 +582,49 @@ details[open] .sectionSummary::after {
   color: var(--deep);
 }
 
-.overviewMapWrap {
-  position: relative;
-  margin-top: 12px;
-}
-
-.overviewSvg {
-  display: block;
-  width: 100%;
-  height: auto;
+.yardageCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  margin: 14px 18px 0;
+  padding: 18px;
+  border-radius: 20px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0)),
-    radial-gradient(circle at 50% 18%, rgba(255,255,255,0.35), transparent 28%);
-}
-
-.mapBadge {
-  position: absolute;
-  z-index: 1;
-  display: grid;
-  gap: 2px;
-  min-width: 84px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
+    linear-gradient(135deg, rgba(45, 74, 62, 0.1), rgba(184, 151, 60, 0.08)),
+    #f7f4ef;
   border: 1px solid rgba(44, 42, 39, 0.08);
-  box-shadow: 0 14px 28px rgba(44, 42, 39, 0.1);
 }
 
-.mapBadge span {
+.yardageCard strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--deep);
   font-family: var(--font-serif);
-  font-size: 1.2rem;
-  color: var(--deep);
+  font-size: 1.25rem;
 }
 
-.mapBadge small {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.yardageCard p {
+  margin: 0.45rem 0 0;
   color: var(--taupe);
+  line-height: 1.65;
 }
 
-.mapBadgeTopRight {
-  top: 12px;
-  right: 12px;
-}
-
-.mapBadgeMidLeft {
-  top: 108px;
-  left: 12px;
-}
-
-.mapBadgeBottomLeft {
-  bottom: 18px;
-  left: 12px;
-}
-
-.mapCompass {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 1;
-  width: 34px;
-  height: 34px;
+.mapLinkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 11px 16px;
   border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(44, 42, 39, 0.08);
-  color: var(--deep);
-  font-size: 11px;
+  background: var(--pine);
+  color: #fff;
+  text-decoration: none;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  box-shadow: 0 12px 24px rgba(44, 42, 39, 0.08);
-}
-
-.svgText {
-  font-size: 5px;
-  fill: #1a1916;
-  font-family: Arial, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .greenMapStrip {
@@ -837,7 +848,7 @@ details[open] .sectionSummary::after {
 }
 
 @media (max-width: 980px) {
-  .hero,
+  .appHeader,
   .layout,
   .hudMain,
   .focusBar {
@@ -904,6 +915,8 @@ details[open] .sectionSummary::after {
   .primaryButton,
   .secondaryButton,
   .ghostButton,
+  .ghostButtonDark,
+  .dangerButton,
   .holeNavButton {
     width: 100%;
   }
@@ -917,8 +930,17 @@ details[open] .sectionSummary::after {
     grid-template-columns: 28px 28px 62px repeat(3, minmax(0, 1fr)) 32px 32px;
   }
 
-  .mapBadge {
-    min-width: 74px;
-    padding: 9px 10px;
+  .appHeader {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .headerStat {
+    grid-column: 1 / -1;
+  }
+
+  .yardageCard {
+    grid-template-columns: 1fr;
+    margin-left: 16px;
+    margin-right: 16px;
   }
 }

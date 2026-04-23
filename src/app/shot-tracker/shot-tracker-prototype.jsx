@@ -6,7 +6,6 @@ import {
   MALLORCA_TRACKER_COURSES,
   getTrackerCourseById,
 } from '../../lib/mallorca-tracker-courses.js'
-import { getCourseArt } from '../../lib/mallorca-tracker-art.js'
 
 const STORAGE_KEY = 'mmg-shot-tracker-prototype-v4'
 const YARDS_PER_METER = 1.09361
@@ -111,10 +110,6 @@ function buildEmptyScorecard(course, teeName) {
 
 function getHoleLength(hole, teeName) {
   return hole.tees[teeName]?.lengthMeters || Object.values(hole.tees)[0]?.lengthMeters || 0
-}
-
-function createLandingCorridor(geometry) {
-  return `M50 166 C48 152, 48 138, ${geometry.layup.x} ${geometry.layup.y + 8} L${geometry.layup.x + 5} ${geometry.layup.y - 6} C56 129, 55 144, 57 160 Z`
 }
 
 function expectedStrokesFromTee(lengthMeters, par) {
@@ -227,6 +222,10 @@ function getTargetDistances(hole, selectedHoleLength, trackedHoleDistance) {
   }
 }
 
+function getGoogleMapsUrl(course) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${course.name} Mallorca golf course`)}`
+}
+
 function HoleOverview({
   course,
   hole,
@@ -242,11 +241,7 @@ function HoleOverview({
   const distanceLabel = latestShot?.distanceMeters
     ? formatDistance(latestShot.distanceMeters, unit)
     : formatDistance(selectedHoleLength, unit)
-  const geometry = getCourseArt(course.name, hole.holeNumber - 1, hole.overviewVariant)
-  const bunkers = geometry.bunkers || []
-  const trees = geometry.trees || []
-  const waterPath = geometry.waterPath
-  const landingCorridor = createLandingCorridor(geometry)
+  const googleMapsUrl = getGoogleMapsUrl(course)
 
   return (
     <div
@@ -276,84 +271,17 @@ function HoleOverview({
         </div>
       </div>
 
-      <div className={styles.overviewMapWrap}>
-        <div className={`${styles.mapBadge} ${styles.mapBadgeTopRight}`}>
-          <span>{formatDistance(greenDistances.middle, unit)}</span>
-          <small>middle</small>
+      <div className={styles.yardageCard}>
+        <div>
+          <span className={styles.metaLabel}>This is a yardage card</span>
+          <strong>Not an accurate hole image</strong>
+          <p>
+            The scorecard and distances are loaded from published scorecards. The old concept sketch is hidden because it could mislead you on holes like Santa Ponsa 2 hole 3.
+          </p>
         </div>
-        <div className={`${styles.mapBadge} ${styles.mapBadgeMidLeft}`}>
-          <span>{formatDistance(targetDistances.toCarry, unit)}</span>
-          <small>carry</small>
-        </div>
-        <div className={`${styles.mapBadge} ${styles.mapBadgeBottomLeft}`}>
-          <span>{formatDistance(targetDistances.toLayup, unit)}</span>
-          <small>lay-up</small>
-        </div>
-        <div className={styles.mapCompass}>N</div>
-
-        <svg viewBox="0 0 100 180" className={styles.overviewSvg} role="img" aria-label="Hole overview">
-          <defs>
-            <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="var(--sky)" />
-              <stop offset="100%" stopColor="#f7f4ef" />
-            </linearGradient>
-            <linearGradient id="waterGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#97d2e8" />
-              <stop offset="100%" stopColor="#4aa0c8" />
-            </linearGradient>
-            <linearGradient id="corridorGradient" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0.26)" />
-            </linearGradient>
-            <radialGradient id="greenGlow" cx="50%" cy="50%" r="60%">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.58)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-            </radialGradient>
-          </defs>
-
-          <rect width="100" height="180" rx="8" fill="url(#bgGradient)" />
-          <path d="M8 145 C28 137, 72 137, 92 145" stroke="rgba(255,255,255,0.22)" strokeWidth="0.9" fill="none" strokeDasharray="2 2" />
-          <path d="M10 112 C31 103, 69 103, 90 112" stroke="rgba(255,255,255,0.24)" strokeWidth="0.9" fill="none" strokeDasharray="2 2" />
-          <path d="M15 74 C34 66, 66 66, 85 74" stroke="rgba(255,255,255,0.22)" strokeWidth="0.9" fill="none" strokeDasharray="2 2" />
-          {waterPath ? <path d={waterPath} fill="url(#waterGradient)" opacity="0.92" stroke="#2d7ea4" strokeWidth="0.8" /> : null}
-          {trees.map((tree, index) => (
-            <g key={`${tree.x}-${tree.y}-${index}`}>
-              <circle cx={tree.x} cy={tree.y} r={tree.size} fill="#4d7a67" opacity="0.95" />
-              <circle cx={tree.x + 1.2} cy={tree.y - 0.8} r={tree.size * 0.78} fill="#2d4a3e" opacity="0.9" />
-            </g>
-          ))}
-          <path d={geometry.fairwayPath} fill="var(--fairway)" stroke="var(--accent)" strokeWidth="1.4" />
-          <path d={landingCorridor} fill="url(#corridorGradient)" opacity="0.65" />
-          {bunkers.map((bunker, index) => (
-            <ellipse
-              key={`${bunker.x}-${bunker.y}-${index}`}
-              cx={bunker.x}
-              cy={bunker.y}
-              rx={bunker.rx}
-              ry={bunker.ry}
-              fill="#efe1bf"
-              stroke="#ccb481"
-              strokeWidth="0.7"
-              transform={`rotate(${bunker.rotate} ${bunker.x} ${bunker.y})`}
-            />
-          ))}
-          <ellipse cx="50" cy="13" rx="14" ry="7" fill="#d9d2a9" stroke="var(--accent)" strokeWidth="1" />
-          <ellipse cx="50" cy="13" rx="9.5" ry="4.2" fill="url(#greenGlow)" />
-          <circle cx="50" cy="166" r="4.5" fill="#f7f4ef" stroke="var(--accent)" strokeWidth="1.4" />
-          <circle cx={geometry.layup.x} cy={geometry.layup.y} r="4" fill="rgba(255,255,255,0.85)" stroke="var(--accent)" strokeWidth="1.2" />
-          <circle cx={geometry.target.x} cy={geometry.target.y} r="4" fill="#dcecff" stroke="var(--accent)" strokeWidth="1.2" />
-          <path d={geometry.linePath} stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-          <path d={`M${geometry.layup.x} ${geometry.layup.y} L${geometry.layup.x - 8} ${geometry.layup.y - 16}`} stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
-          <path d={`M50 166 L${geometry.layup.x} ${geometry.layup.y}`} stroke="rgba(27,45,38,0.22)" strokeWidth="4" strokeLinecap="round" fill="none" />
-          <path d={`M${geometry.layup.x} ${geometry.layup.y} L${geometry.target.x} ${geometry.target.y}`} stroke="rgba(27,45,38,0.18)" strokeWidth="4" strokeLinecap="round" fill="none" />
-          <circle cx="50" cy="166" r="7.8" fill="none" stroke="rgba(255,255,255,0.38)" strokeWidth="0.8" />
-          <text x="58" y="168" className={styles.svgText}>Tee</text>
-          <text x={geometry.layup.x + 8} y={geometry.layup.y + 4} className={styles.svgText}>{hole.targetZone}</text>
-          <text x={geometry.target.x + 8} y={geometry.target.y + 4} className={styles.svgText}>Green</text>
-          <text x="11" y="144" className={styles.svgText}>100</text>
-          <text x="12" y="111" className={styles.svgText}>150</text>
-          <text x="17" y="73" className={styles.svgText}>200</text>
-        </svg>
+        <a className={styles.mapLinkButton} href={googleMapsUrl} target="_blank" rel="noreferrer">
+          Open course in Google Maps
+        </a>
       </div>
 
       <div className={styles.greenMapStrip}>
@@ -401,8 +329,8 @@ function HoleOverview({
 
       <div className={styles.mapFeatureGrid}>
         <div>
-          <span className={styles.metaLabel}>Map layer</span>
-          <strong>Custom course art</strong>
+          <span className={styles.metaLabel}>Hole image</span>
+          <strong>Hidden</strong>
         </div>
         <div>
           <span className={styles.metaLabel}>GPS mode</span>
@@ -415,9 +343,7 @@ function HoleOverview({
       </div>
 
       <p className={styles.overviewNote}>
-        {course.priority
-          ? 'Priority Mallorca course pack. Tuned premium concept art now mirrors the target-line style of full GPS apps.'
-          : 'Concept overview only for now. We can replace this with traced hole art later.'}
+        Google Maps can be opened for a real satellite overview. To embed Google satellite maps inside this app later, we need a Google Maps API key with billing enabled.
       </p>
     </div>
   )
@@ -614,6 +540,21 @@ export default function ShotTrackerPrototype() {
     setStatus('Round saved into local handicap history.')
   }
 
+  function endRoundAndSave() {
+    saveRound()
+    resetRoundState(selectedCourse, teeName)
+    setStatus('Round saved and ended. Fresh round ready.')
+  }
+
+  function endRoundAndDelete() {
+    if (typeof window !== 'undefined' && !window.confirm('End this round and delete the unsaved round data from this device?')) {
+      return
+    }
+
+    resetRoundState(selectedCourse, teeName)
+    setStatus('Round ended without saving.')
+  }
+
   function startFreshRound() {
     resetRoundState(selectedCourse, teeName)
     setStatus('Fresh round started.')
@@ -694,35 +635,27 @@ export default function ShotTrackerPrototype() {
   }, [currentRoundShots])
 
   const priorityCourses = MALLORCA_TRACKER_COURSES.filter((course) => course.priority)
+  const otherCourses = MALLORCA_TRACKER_COURSES.filter((course) => !course.priority)
 
   return (
     <section className={styles.page}>
-      <div className={styles.hero}>
-        <div>
+      <header className={styles.appHeader}>
+        <div className={styles.cornerBrand}>
           <img
             className={styles.heroLogo}
             src="/MMG_Logo_Green_Transparent.png"
             alt="Mr Mallorca Golf"
           />
-          <p className={styles.eyebrow}>Mallorca Tracker Prototype</p>
-          <h1 className={styles.title}>A Mallorca-first round tracker shaped to feel close to a premium golf GPS app.</h1>
-          <p className={styles.lead}>
-            The tracker now feels much more like a real on-course tool: a live round HUD, tuned hole overviews, shot history editing, quick notes, progress tracking, and a stronger coaching-style data layer behind the scenes.
-          </p>
         </div>
-        <div className={styles.heroStats}>
-          <div className={styles.statCard}>
-            <span className={styles.metaLabel}>Priority course pack</span>
-            <strong className={styles.statValue}>{priorityCourses.length}</strong>
-          </div>
-          <div className={styles.statCard}>
-            <span className={styles.metaLabel}>Handicap index</span>
-            <strong className={styles.statValue}>
-              {Number.isFinite(handicapIndex) ? handicapIndex.toFixed(1) : '--'}
-            </strong>
-          </div>
+        <div>
+          <p className={styles.eyebrow}>Mr Mallorca Golf</p>
+          <h1 className={styles.appTitle}>Shot Tracker</h1>
         </div>
-      </div>
+        <div className={styles.headerStat}>
+          <span className={styles.metaLabel}>Handicap index</span>
+          <strong>{Number.isFinite(handicapIndex) ? handicapIndex.toFixed(1) : '--'}</strong>
+        </div>
+      </header>
 
       <div className={styles.focusBar}>
         <div>
@@ -738,11 +671,6 @@ export default function ShotTrackerPrototype() {
       <div className={styles.roundHud}>
         <div className={styles.hudMain}>
           <div>
-            <img
-              className={styles.hudLogo}
-              src="/MMG_Logo_White_Transparent.png"
-              alt="Mr Mallorca Golf"
-            />
             <span className={styles.metaLabel}>Live round</span>
             <strong className={styles.hudHeadline}>{selectedCourse.name}</strong>
             <p className={styles.hudSubline}>{selectedTee.label} tee · Hole {holeNumber} · {roundDate}</p>
@@ -778,6 +706,11 @@ export default function ShotTrackerPrototype() {
             <strong>{latestShot ? formatDistance(latestShot.distanceMeters, unit) : '--'}</strong>
           </div>
         </div>
+        <div className={styles.endRoundBar}>
+          <button className={styles.secondaryButton} onClick={endRoundAndSave}>End + save round</button>
+          <button className={styles.dangerButton} onClick={endRoundAndDelete}>End + delete round</button>
+          <button className={styles.ghostButtonDark} onClick={exportTrackerData}>Export backup</button>
+        </div>
       </div>
 
       <div className={styles.layout}>
@@ -797,11 +730,20 @@ export default function ShotTrackerPrototype() {
               <label className={styles.field}>
                 <span>Course</span>
                 <select value={courseId} onChange={(event) => setCourseId(event.target.value)}>
-                  {MALLORCA_TRACKER_COURSES.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.name}
-                    </option>
-                  ))}
+                  <optgroup label={`Priority courses (${priorityCourses.length})`}>
+                    {priorityCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="All other Mallorca courses">
+                    {otherCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </label>
 
@@ -845,19 +787,6 @@ export default function ShotTrackerPrototype() {
               })}
             </div>
 
-            <div className={styles.coursePills}>
-              {priorityCourses.map((course) => (
-                <button
-                  key={course.id}
-                  type="button"
-                  className={`${styles.coursePill}${course.id === courseId ? ` ${styles.coursePillActive}` : ''}`}
-                  onClick={() => setCourseId(course.id)}
-                >
-                  {course.name}
-                </button>
-              ))}
-            </div>
-
             <div className={styles.teeMetaGrid}>
               <div className={styles.summaryCard}>
                 <span className={styles.metaLabel}>Tee total</span>
@@ -878,7 +807,7 @@ export default function ShotTrackerPrototype() {
               Scorecard status: {selectedCourse.scorecardSource}.
             </p>
             <p className={styles.priorityNote}>
-              Priority Mallorca pack: {priorityCourses.map((course) => course.name).join(', ')}. Santa Ponsa 1, 2, and 3 now use official scorecard par, SI, and tee lengths; other courses are still concept data until we verify them.
+              Priority courses are grouped at the top of the course dropdown.
             </p>
           </details>
 
@@ -1026,6 +955,8 @@ export default function ShotTrackerPrototype() {
                 <span>Round actions</span>
                 <div className={styles.buttonRow}>
                   <button className={styles.primaryButton} onClick={saveRound}>Save round</button>
+                  <button className={styles.secondaryButton} onClick={endRoundAndSave}>End + save</button>
+                  <button className={styles.dangerButton} onClick={endRoundAndDelete}>End + delete</button>
                   <button className={styles.ghostButton} onClick={goToNextHole}>Continue round</button>
                   <button className={styles.ghostButton} onClick={startFreshRound}>Fresh round</button>
                   <button className={styles.ghostButton} onClick={exportTrackerData}>Export backup</button>

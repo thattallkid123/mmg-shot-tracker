@@ -73,9 +73,16 @@ const PRIORITY_COURSE_NAMES = new Set([
   'Golf Son Gual',
   'Club de Golf Alcanada',
   'Son Muntaner',
+  'Golf Son Vida',
+  'Golf Son Quint',
+  'T Golf Palma Puntiro',
   'Golf Son Termes',
   'Golf Santa Ponsa 1',
   'Golf Santa Ponsa 2',
+  'Golf Santa Ponsa 3',
+  'Real Golf de Bendinat',
+  'T Golf Calvia (Poniente)',
+  'Golf de Andratx',
 ])
 
 const COURSE_THEMES = {
