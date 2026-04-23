@@ -44,6 +44,14 @@ function formatSignedNumber(value) {
   return `${value > 0 ? '+' : ''}${value.toFixed(1)}`
 }
 
+function formatRating(value) {
+  return Number.isFinite(value) ? value.toFixed(1) : '--'
+}
+
+function formatPlainNumber(value) {
+  return Number.isFinite(value) ? value : '--'
+}
+
 function getGeolocationPosition() {
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
@@ -841,11 +849,11 @@ export default function ShotTrackerPrototype() {
               </div>
               <div className={styles.summaryCard}>
                 <span className={styles.metaLabel}>Course rating</span>
-                <strong className={styles.summaryValue}>{selectedTee.courseRating.toFixed(1)}</strong>
+                <strong className={styles.summaryValue}>{formatRating(selectedTee.courseRating)}</strong>
               </div>
               <div className={styles.summaryCard}>
                 <span className={styles.metaLabel}>Slope</span>
-                <strong className={styles.summaryValue}>{selectedTee.slope}</strong>
+                <strong className={styles.summaryValue}>{formatPlainNumber(selectedTee.slope)}</strong>
               </div>
             </div>
 

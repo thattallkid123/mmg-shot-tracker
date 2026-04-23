@@ -2,12 +2,14 @@
   "name": "mmg-shot-tracker",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": "20.x"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:scorecards": "node scripts/check-scorecards.mjs",
     "start": "next start",
     "lint": "next lint"
   },
