@@ -10,6 +10,15 @@ import {
 const STORAGE_KEY = 'mmg-shot-tracker-prototype-v4'
 const YARDS_PER_METER = 1.09361
 const QUICK_NOTES = ['Good strike', 'Pulled left', 'Blocked right', 'Downwind', 'Into wind', 'From rough']
+const SG_LIE_OPTIONS = [
+  { value: 'tee', label: 'Tee' },
+  { value: 'fairway', label: 'Fairway' },
+  { value: 'rough', label: 'Rough' },
+  { value: 'sand', label: 'Sand' },
+  { value: 'recovery', label: 'Recovery' },
+  { value: 'green', label: 'Green' },
+  { value: 'holed', label: 'Holed' },
+]
 
 function toRadians(value) {
   return (value * Math.PI) / 180
@@ -49,6 +58,90 @@ function formatRating(value) {
 
 function formatPlainNumber(value) {
   return Number.isFinite(value) ? value : '--'
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function expectedStrokesFromShot(distance, lie) {
+  const parsedDistance = Number(distance)
+  if (lie === 'holed') return 0
+  if (!Number.isFinite(parsedDistance) || parsedDistance <= 0) return null
+
+  if (lie === 'green') {
+    const feet = parsedDistance
+    if (feet <= 2) return 1.03
+    if (feet <= 5) return 1.12 + feet * 0.035
+    if (feet <= 10) return 1.32 + (feet - 5) * 0.045
+    if (feet <= 30) return 1.55 + (feet - 10) * 0.018
+    if (feet <= 80) return 1.91 + (feet - 30) * 0.01
+    return clamp(2.35 + (feet - 80) * 0.004, 2.35, 3.2)
+  }
+
+  const yards = parsedDistance
+  const base =
+    yards <= 40
+      ? 2.15 + yards * 0.012
+      : yards <= 120
+        ? 2.63 + (yards - 40) * 0.0065
+        : yards <= 220
+          ? 3.15 + (yards - 120) * 0.005
+          : yards <= 340
+            ? 3.65 + (yards - 220) * 0.0042
+            : 4.15 + (yards - 340) * 0.0032
+
+  const liePenalty = {
+    tee: -0.1,
+    fairway: 0,
+    rough: 0.22,
+    sand: 0.34,
+    recovery: 0.72,
+  }[lie] ?? 0
+
+  return clamp(base + liePenalty, 1.01, 6.2)
+}
+
+function getStrokesGainedCategory(lie, distance) {
+  const parsedDistance = Number(distance)
+  if (lie === 'green') return 'putting'
+  if (lie === 'tee') return 'offTee'
+  if (Number.isFinite(parsedDistance) && parsedDistance <= 50) return 'shortGame'
+  return 'approach'
+}
+
+function calculateShotStrokesGained(shot) {
+  const startExpected = expectedStrokesFromShot(shot.startDistance, shot.startLie)
+  const endExpected = expectedStrokesFromShot(shot.endDistance, shot.endLie)
+
+  if (!Number.isFinite(startExpected) || !Number.isFinite(endExpected)) return null
+
+  return startExpected - (1 + endExpected)
+}
+
+function getShotStrokesGainedSummary(shots) {
+  const summary = {
+    offTee: 0,
+    approach: 0,
+    shortGame: 0,
+    putting: 0,
+    total: 0,
+    count: 0,
+  }
+
+  for (const shot of shots) {
+    const value = Number.isFinite(shot.strokesGained)
+      ? shot.strokesGained
+      : calculateShotStrokesGained(shot)
+    if (!Number.isFinite(value)) continue
+
+    const category = shot.sgCategory || getStrokesGainedCategory(shot.startLie, shot.startDistance)
+    summary[category] += value
+    summary.total += value
+    summary.count += 1
+  }
+
+  return summary
 }
 
 function getGeolocationPosition() {
@@ -160,6 +253,23 @@ function calculatePerformanceSnapshot({ scorecard, course, teeName, shots }) {
 
   const total = offTee + approach + shortGame + putting + holeLevelAdjustment * 0.35
 
+  const manualSg = getShotStrokesGainedSummary(shots)
+  const strokesGained = manualSg.count > 0
+    ? {
+        offTee: manualSg.offTee,
+        approach: manualSg.approach,
+        shortGame: manualSg.shortGame,
+        putting: manualSg.putting,
+        total: manualSg.total,
+      }
+    : {
+        offTee,
+        approach,
+        shortGame,
+        putting,
+        total,
+      }
+
   return {
     holesPlayed,
     grossScore,
@@ -170,13 +280,8 @@ function calculatePerformanceSnapshot({ scorecard, course, teeName, shots }) {
     parPlayed,
     expectedFromTeeTotal,
     scoringDelta,
-    strokesGained: {
-      offTee,
-      approach,
-      shortGame,
-      putting,
-      total,
-    },
+    strokesGained,
+    strokesGainedShotCount: manualSg.count,
   }
 }
 
@@ -350,6 +455,7 @@ function HoleOverview({
 }
 
 export default function ShotTrackerPrototype() {
+  const [appMode, setAppMode] = useState('sg')
   const [courseId, setCourseId] = useState(MALLORCA_TRACKER_COURSES[0].id)
   const [teeName, setTeeName] = useState(MALLORCA_TRACKER_COURSES[0].tees[0].name)
   const [holeNumber, setHoleNumber] = useState(1)
@@ -366,6 +472,14 @@ export default function ShotTrackerPrototype() {
   const [error, setError] = useState('')
   const [isLocating, setIsLocating] = useState(false)
   const [currentRoundId, setCurrentRoundId] = useState(() => `${Date.now()}`)
+  const [sgDraft, setSgDraft] = useState({
+    startLie: 'tee',
+    startDistance: '400',
+    endLie: 'fairway',
+    endDistance: '150',
+    club: '',
+    notes: '',
+  })
 
   const selectedCourse = useMemo(() => getTrackerCourseById(courseId), [courseId])
   const selectedTee = useMemo(
@@ -415,6 +529,7 @@ export default function ShotTrackerPrototype() {
 
     try {
       const parsed = JSON.parse(saved)
+      if (parsed.appMode) setAppMode(parsed.appMode)
       if (parsed.courseId) setCourseId(parsed.courseId)
       if (parsed.teeName) setTeeName(parsed.teeName)
       if (parsed.holeNumber) setHoleNumber(parsed.holeNumber)
@@ -438,6 +553,7 @@ export default function ShotTrackerPrototype() {
       STORAGE_KEY,
       JSON.stringify({
         currentRoundId,
+        appMode,
         courseId,
         teeName,
         holeNumber,
@@ -450,7 +566,7 @@ export default function ShotTrackerPrototype() {
         latestPosition,
       }),
     )
-  }, [currentRoundId, courseId, teeName, holeNumber, unit, roundDate, scorecard, shots, savedRounds, trackingStart, latestPosition])
+  }, [currentRoundId, appMode, courseId, teeName, holeNumber, unit, roundDate, scorecard, shots, savedRounds, trackingStart, latestPosition])
 
   async function captureCurrentLocation(mode) {
     setIsLocating(true)
@@ -477,8 +593,15 @@ export default function ShotTrackerPrototype() {
           start: trackingStart,
           end: nextPosition,
           distanceMeters,
+          startLie: holeNumber === 1 && currentHoleShots.length === 0 ? 'tee' : 'fairway',
+          startDistance: Math.round(Math.max(0, selectedHoleLength - trackedHoleDistance) * YARDS_PER_METER),
+          endLie: 'fairway',
+          endDistance: Math.round(Math.max(0, selectedHoleLength - trackedHoleDistance - distanceMeters) * YARDS_PER_METER),
           capturedAt: Date.now(),
         }
+
+        shot.strokesGained = calculateShotStrokesGained(shot)
+        shot.sgCategory = getStrokesGainedCategory(shot.startLie, shot.startDistance)
 
         setShots((current) => [shot, ...current])
         setPendingClubShotId(shot.id)
@@ -514,8 +637,61 @@ export default function ShotTrackerPrototype() {
 
   function updateShot(shotId, field, value) {
     setShots((current) =>
-      current.map((shot) => (shot.id === shotId ? { ...shot, [field]: value } : shot)),
+      current.map((shot) => {
+        if (shot.id !== shotId) return shot
+        const nextShot = { ...shot, [field]: value }
+
+        if (['startLie', 'startDistance', 'endLie', 'endDistance'].includes(field)) {
+          nextShot.strokesGained = calculateShotStrokesGained(nextShot)
+          nextShot.sgCategory = getStrokesGainedCategory(nextShot.startLie, nextShot.startDistance)
+        }
+
+        return nextShot
+      }),
     )
+  }
+
+  function updateSgDraft(field, value) {
+    setSgDraft((current) => ({ ...current, [field]: value }))
+  }
+
+  function addManualSgShot() {
+    const shot = {
+      id: `${Date.now()}`,
+      roundId: currentRoundId,
+      courseId,
+      courseName: selectedCourse.name,
+      holeNumber,
+      club: sgDraft.club.trim(),
+      notes: sgDraft.notes.trim(),
+      manual: true,
+      startLie: sgDraft.startLie,
+      startDistance: Number(sgDraft.startDistance),
+      endLie: sgDraft.endLie,
+      endDistance: Number(sgDraft.endDistance),
+      capturedAt: Date.now(),
+    }
+    const strokesGained = calculateShotStrokesGained(shot)
+
+    if (!Number.isFinite(strokesGained)) {
+      setError('Add a start distance and finish distance. Use feet on the green and yards everywhere else.')
+      setStatus('Strokes gained shot needs distance and lie details.')
+      return
+    }
+
+    shot.strokesGained = strokesGained
+    shot.sgCategory = getStrokesGainedCategory(shot.startLie, shot.startDistance)
+    setShots((current) => [shot, ...current])
+    setError('')
+    setStatus(`Shot added: ${formatSignedNumber(strokesGained)} strokes gained.`)
+    setSgDraft((current) => ({
+      startLie: current.endLie === 'holed' ? 'tee' : current.endLie,
+      startDistance: current.endLie === 'holed' ? '' : current.endDistance,
+      endLie: current.endLie === 'holed' ? 'fairway' : 'green',
+      endDistance: current.endLie === 'holed' ? '' : '',
+      club: '',
+      notes: '',
+    }))
   }
 
   function assignPendingClub(nextClub) {
@@ -671,13 +847,13 @@ export default function ShotTrackerPrototype() {
         <div className={styles.cornerBrand}>
           <img
             className={styles.heroLogo}
-            src="/MMG_Logo_Green_Transparent.png"
+            src="/MMG_Logo_Gold_Transparent.png"
             alt="Mr Mallorca Golf"
           />
         </div>
         <div>
           <p className={styles.eyebrow}>Mr Mallorca Golf</p>
-          <h1 className={styles.appTitle}>Shot Tracker</h1>
+          <h1 className={styles.appTitle}>Strokes Gained</h1>
         </div>
         <div className={styles.headerStat}>
           <span className={styles.metaLabel}>Handicap index</span>
@@ -688,16 +864,33 @@ export default function ShotTrackerPrototype() {
       <div className={styles.focusBar}>
         <div>
           <span className={styles.metaLabel}>Next action</span>
-          <strong>{trackingStart ? 'Walk to the ball, then end tracking.' : 'Pick club, start tracking, then hit.'}</strong>
+          <strong>{appMode === 'sg' ? 'Enter lie, distance, finish, then add shot.' : trackingStart ? 'Walk to the ball, then end tracking.' : 'Pick club, start tracking, then hit.'}</strong>
         </div>
         <div>
           <span className={styles.metaLabel}>Current hole</span>
           <strong>{selectedCourse.name} · Hole {holeNumber} · Par {selectedHole.par}</strong>
         </div>
         <div>
-          <span className={styles.metaLabel}>GPS</span>
-          <strong>{Number.isFinite(gpsAccuracy) ? `±${Math.round(gpsAccuracy)}m` : 'Tap Refresh GPS'}</strong>
+          <span className={styles.metaLabel}>{appMode === 'sg' ? 'Mode' : 'GPS'}</span>
+          <strong>{appMode === 'sg' ? 'Strokes gained only' : Number.isFinite(gpsAccuracy) ? `±${Math.round(gpsAccuracy)}m` : 'Tap Refresh GPS'}</strong>
         </div>
+      </div>
+
+      <div className={styles.modeSwitch} aria-label="Tracking mode">
+        <button
+          type="button"
+          className={appMode === 'sg' ? styles.modeActive : ''}
+          onClick={() => setAppMode('sg')}
+        >
+          Strokes gained
+        </button>
+        <button
+          type="button"
+          className={appMode === 'gps' ? styles.modeActive : ''}
+          onClick={() => setAppMode('gps')}
+        >
+          GPS tracker
+        </button>
       </div>
 
       <div className={styles.roundHud}>
@@ -745,14 +938,14 @@ export default function ShotTrackerPrototype() {
         </div>
       </div>
 
-      <div className={styles.mobileCaddieBar}>
+      {appMode === 'gps' ? <div className={styles.mobileCaddieBar}>
         <button className={trackingStart ? styles.secondaryButton : styles.primaryButton} onClick={toggleShotTracking} disabled={isLocating}>
           {trackingStart ? 'Stop tracking' : 'Start tracking'}
         </button>
         <button className={styles.ghostButton} onClick={goToNextHole}>
           Next hole
         </button>
-      </div>
+      </div> : null}
 
       <div className={styles.quickScoreBar}>
         <button type="button" onClick={() => setCurrentHoleScore(-1)}>Birdie</button>
@@ -861,7 +1054,62 @@ export default function ShotTrackerPrototype() {
 
           <details className={styles.panel} open>
             <summary className={styles.sectionSummary}>
-              <span>2</span>
+              <span>SG</span>
+              <strong>Strokes gained</strong>
+              <small>{snapshot.strokesGainedShotCount} SG shots · {formatSignedNumber(snapshot.strokesGained.total)} total</small>
+            </summary>
+            <div className={styles.panelHeader}>
+              <h2>Shot-by-shot SG</h2>
+              <p>Use yards until the ball is on the green, then use feet for putts.</p>
+            </div>
+
+            <div className={styles.sgEntryGrid}>
+              <label className={styles.field}>
+                <span>Start lie</span>
+                <select value={sgDraft.startLie} onChange={(event) => updateSgDraft('startLie', event.target.value)}>
+                  {SG_LIE_OPTIONS.filter((option) => option.value !== 'holed').map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span>{sgDraft.startLie === 'green' ? 'Start feet' : 'Start yards'}</span>
+                <input value={sgDraft.startDistance} onChange={(event) => updateSgDraft('startDistance', event.target.value)} inputMode="decimal" placeholder={sgDraft.startLie === 'green' ? '18' : '165'} />
+              </label>
+              <label className={styles.field}>
+                <span>Finish lie</span>
+                <select value={sgDraft.endLie} onChange={(event) => updateSgDraft('endLie', event.target.value)}>
+                  {SG_LIE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span>{sgDraft.endLie === 'green' ? 'Finish feet' : sgDraft.endLie === 'holed' ? 'Holed' : 'Finish yards'}</span>
+                <input value={sgDraft.endDistance} onChange={(event) => updateSgDraft('endDistance', event.target.value)} inputMode="decimal" placeholder={sgDraft.endLie === 'holed' ? '0' : sgDraft.endLie === 'green' ? '12' : '95'} disabled={sgDraft.endLie === 'holed'} />
+              </label>
+              <label className={styles.field}>
+                <span>Club</span>
+                <input value={sgDraft.club} onChange={(event) => updateSgDraft('club', event.target.value)} placeholder="Driver, 7i, putter..." />
+              </label>
+              <label className={styles.field}>
+                <span>Note</span>
+                <input value={sgDraft.notes} onChange={(event) => updateSgDraft('notes', event.target.value)} placeholder="Thin, good leave, pushed right..." />
+              </label>
+            </div>
+
+            <div className={styles.buttonRow}>
+              <button type="button" className={styles.primaryButton} onClick={addManualSgShot}>Add SG shot</button>
+              <button type="button" className={styles.ghostButton} onClick={goToNextHole}>Next hole</button>
+            </div>
+            <p className={styles.priorityNote}>
+              This is the reliable core: no GPS permission, no map accuracy issue, and no need to walk with the phone in exactly the right flow.
+            </p>
+          </details>
+
+          {appMode === 'gps' ? <details className={styles.panel}>
+            <summary className={styles.sectionSummary}>
+              <span>GPS</span>
               <strong>Track shot</strong>
               <small>{latestShot ? `Latest ${formatDistance(latestShot.distanceMeters, unit)}` : status}</small>
             </summary>
@@ -1002,7 +1250,7 @@ export default function ShotTrackerPrototype() {
                 </button>
               </div>
             </div>
-          </details>
+          </details> : null}
 
           <details className={styles.panel}>
             <summary className={styles.sectionSummary}>
@@ -1107,7 +1355,9 @@ export default function ShotTrackerPrototype() {
                       <div>
                         <strong>Shot {currentHoleShots.length - index}</strong>
                         <p className={styles.historyMeta}>
-                          {formatDistance(shot.distanceMeters, unit)} · Accuracy {Math.round(shot.end.accuracy || 0)}m
+                          {Number.isFinite(shot.strokesGained)
+                            ? `${formatSignedNumber(shot.strokesGained)} SG · ${shot.startLie} ${shot.startDistance}${shot.startLie === 'green' ? 'ft' : 'yd'} to ${shot.endLie}${shot.endLie === 'holed' ? '' : ` ${shot.endDistance}${shot.endLie === 'green' ? 'ft' : 'yd'}`}`
+                            : `${formatDistance(shot.distanceMeters, unit)} · Accuracy ${Math.round(shot.end?.accuracy || 0)}m`}
                         </p>
                       </div>
                       <span className={`${styles.shotTone} ${styles[`shotTone${getShotTone(shot.notes)}`]}`}>
@@ -1116,6 +1366,41 @@ export default function ShotTrackerPrototype() {
                     </div>
 
                     <div className={styles.shotEditGrid}>
+                      <label className={styles.field}>
+                        <span>Start lie</span>
+                        <select value={shot.startLie || 'fairway'} onChange={(event) => updateShot(shot.id, 'startLie', event.target.value)}>
+                          {SG_LIE_OPTIONS.filter((option) => option.value !== 'holed').map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className={styles.field}>
+                        <span>{shot.startLie === 'green' ? 'Start feet' : 'Start yards'}</span>
+                        <input
+                          value={shot.startDistance || ''}
+                          onChange={(event) => updateShot(shot.id, 'startDistance', event.target.value)}
+                          inputMode="decimal"
+                          placeholder="Start"
+                        />
+                      </label>
+                      <label className={styles.field}>
+                        <span>Finish lie</span>
+                        <select value={shot.endLie || 'fairway'} onChange={(event) => updateShot(shot.id, 'endLie', event.target.value)}>
+                          {SG_LIE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className={styles.field}>
+                        <span>{shot.endLie === 'green' ? 'Finish feet' : shot.endLie === 'holed' ? 'Holed' : 'Finish yards'}</span>
+                        <input
+                          value={shot.endDistance || ''}
+                          onChange={(event) => updateShot(shot.id, 'endDistance', event.target.value)}
+                          inputMode="decimal"
+                          placeholder="Finish"
+                          disabled={shot.endLie === 'holed'}
+                        />
+                      </label>
                       <label className={styles.field}>
                         <span>Club</span>
                         <input

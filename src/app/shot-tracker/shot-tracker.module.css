@@ -10,7 +10,8 @@
 .appHeader,
 .layout,
 .roundHud,
-.focusBar {
+.focusBar,
+.modeSwitch {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
@@ -120,6 +121,35 @@
   backdrop-filter: blur(12px);
 }
 
+.modeSwitch {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 520px;
+  margin-bottom: 18px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(44, 42, 39, 0.08);
+  box-shadow: 0 14px 34px rgba(44, 42, 39, 0.07);
+}
+
+.modeSwitch button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--taupe);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.modeSwitch .modeActive {
+  background: var(--pine);
+  color: #fff;
+}
+
 .quickScoreBar {
   max-width: 1200px;
   margin: -8px auto 18px;
@@ -222,7 +252,12 @@
   display: block;
   width: 72px;
   height: auto;
-  filter: drop-shadow(0 16px 26px rgba(44, 42, 39, 0.08));
+  /* Gold tint: converts black logo to MMG gold (#B8973C).
+     Filter values computed for that hex — see docs/LOGO.md.
+     Tweak brightness() to go lighter/darker. */
+  filter:
+    invert(63%) sepia(42%) saturate(608%) hue-rotate(4deg) brightness(91%) contrast(90%)
+    drop-shadow(0 16px 26px rgba(44, 42, 39, 0.08));
 }
 
 .cornerBrand {
@@ -425,6 +460,7 @@ details[open] .sectionSummary::after {
 .overviewMeta,
 .overviewStats,
 .sgGrid,
+.sgEntryGrid,
 .quickActionGrid,
 .playbookRow,
 .shotEditGrid {
@@ -440,7 +476,8 @@ details[open] .sectionSummary::after {
 .summaryGrid,
 .quickActionGrid,
 .playbookRow,
-.shotEditGrid {
+.shotEditGrid,
+.sgEntryGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -999,9 +1036,10 @@ details[open] .sectionSummary::after {
   .summaryGrid,
   .teeMetaGrid,
   .overviewMeta,
-  .overviewStats,
-  .sgGrid,
-  .holeFlowBar,
+    .overviewStats,
+    .sgGrid,
+    .sgEntryGrid,
+    .holeFlowBar,
   .quickActionGrid,
   .playbookRow,
   .shotEditGrid,
