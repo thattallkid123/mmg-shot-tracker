@@ -850,6 +850,7 @@ export default function ShotTrackerPrototype() {
             src="/MMG_Logo_Gold_Transparent.png"
             alt="Mr Mallorca Golf"
           />
+          <span className={styles.logoGoldBar}></span>
         </div>
         <div>
           <p className={styles.eyebrow}>Mr Mallorca Golf</p>
